@@ -1,5 +1,1 @@
-{
-  "version": 2,
-  "builds": [{ "src": "river_game.html", "use": "@vercel/static" }],
-  "routes": [{ "src": "/(.*)", "dest": "/river_game.html" }]
-}
+{}
