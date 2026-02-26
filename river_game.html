@@ -9,26 +9,26 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  :root {
-    --sky: #b8e4f9;
-    --grass: #5cb85c;
-    --grass-dark: #3d8b3d;
-    --score-good: #2ecc71;
-    --score-bad: #e74c3c;
-  }
-
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
     user-select: none;
     font-family: 'Nunito', sans-serif;
-    background: var(--sky);
+  }
+
+  #bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center;
+    z-index: 0;
   }
 
   #scene {
     position: fixed; inset: 0;
-    background: var(--sky);
     overflow: hidden;
+    z-index: 1;
   }
 
   /* clouds */
@@ -49,11 +49,7 @@
   .cloud-c::after  { width: 48px; height: 48px; top: -22px; left: 50px; }
   @keyframes drift { from { left: -200px; } to { left: 110%; } }
 
-  .bank { position: absolute; left: 0; right: 0; }
-  .bank-top    { top: 0;    background: linear-gradient(to bottom, #d4f7a0, var(--grass) 55%, var(--grass-dark)); }
-  .bank-bottom { bottom: 0; background: linear-gradient(to top,   #d4f7a0, var(--grass) 55%, var(--grass-dark)); }
-
-  /* river — now just a container; canvas does the drawing */
+  /* river */
   #river {
     position: absolute; left: 0; right: 0;
     overflow: hidden;
@@ -71,23 +67,36 @@
     box-shadow: 0 0 6px rgba(255,255,255,0.3);
   }
 
+  /* Floating items — now use <img> tags */
   .item {
     position: absolute; will-change: left;
     filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.3));
     animation: floatAcross linear, bob ease-in-out infinite;
-    animation-fill-mode: forwards; line-height: 1;
+    animation-fill-mode: forwards;
     z-index: 6;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .item img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    pointer-events: none;
   }
   @keyframes floatAcross { from { left: 105%; } to { left: -80px; } }
   @keyframes bob { 0%,100% { margin-top: 0; } 50% { margin-top: -9px; } }
 
+  /* Catcher */
   #catcher-zone {
     position: absolute; left: 38px;
-    width: 72px; height: 72px;
+    width: 80px; height: 80px;
     display: flex; align-items: center; justify-content: center;
     z-index: 10; transform: translateY(-50%); pointer-events: none;
   }
-  #catcher { font-size: 3rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
+  #catcher {
+    width: 72px; height: 72px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    transition: opacity 0.15s;
+  }
   #catcher.catch-anim { animation: catchPop 0.4s ease forwards; }
   @keyframes catchPop {
     0%   { transform: scale(1); }
@@ -114,12 +123,20 @@
   .hud-block { display: flex; flex-direction: column; align-items: center; min-width: 52px; }
   .hud-label { font-size: 0.6rem; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.38); font-weight: 700; }
   .hud-val { font-family: 'Fredoka One', cursive; font-size: 1.8rem; line-height: 1.1; color: white; transition: color 0.3s; }
-  .hud-val.good { color: var(--score-good); }
-  .hud-val.bad  { color: var(--score-bad); }
+  .hud-val.good { color: #2ecc71; }
+  .hud-val.bad  { color: #e74c3c; }
 
-  #lives-display { font-size: 1.3rem; line-height: 1; }
+  #lives-display {
+    display: flex; align-items: center; gap: 3px;
+  }
+  #lives-display img {
+    width: 22px; height: 22px;
+    object-fit: contain;
+  }
+  #lives-display img.lost {
+    filter: grayscale(1) opacity(0.35);
+  }
 
-  /* fish counter special styling */
   #fish-val {
     font-family: 'Fredoka One', cursive;
     font-size: 1.8rem; line-height: 1.1;
@@ -133,7 +150,6 @@
     100% { transform: scale(1); color: #4fc3e8; }
   }
 
-  /* combo */
   #combo-display {
     font-family: 'Fredoka One', cursive; font-size: 1.15rem;
     color: #f1c40f; min-width: 60px; text-align: center;
@@ -151,7 +167,10 @@
   #toggle-btn:active { transform: scale(0.94); }
   #toggle-btn.trash-mode { border-color: #e74c3c; background: rgba(231,76,60,0.15); }
   #toggle-btn.fish-mode  { border-color: #4fc3e8; background: rgba(79,195,232,0.15); }
-  .mode-icon { font-size: 1.5rem; }
+  .mode-icon {
+    width: 32px; height: 32px;
+    object-fit: contain;
+  }
 
   .popup {
     position: absolute;
@@ -167,6 +186,18 @@
     100% { opacity: 0; transform: translateY(-80px) scale(0.85); }
   }
 
+  /* popup that shows item image + text */
+  .popup-img {
+    position: absolute;
+    display: flex; align-items: center; gap: 6px;
+    pointer-events: none;
+    animation: popUp 0.9s ease forwards;
+    z-index: 25;
+    font-family: 'Fredoka One', cursive; font-size: 1.35rem;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .popup-img img { width: 32px; height: 32px; object-fit: contain; }
+
   #overlay {
     position: fixed; inset: 0;
     background: rgba(4,12,30,0.9);
@@ -175,7 +206,7 @@
     z-index: 50; gap: 14px;
   }
   #overlay h2 { font-family: 'Fredoka One', cursive; font-size: clamp(2rem,5vw,3.2rem); color: white; }
-  #overlay p  { color: rgba(255,255,255,0.62); font-size: clamp(0.88rem,2vw,1.08rem); text-align: center; max-width: 360px; line-height: 1.65; }
+  #overlay p  { color: rgba(255,255,255,0.62); font-size: clamp(0.88rem,2vw,1.08rem); text-align: center; max-width: 400px; line-height: 1.65; }
   .overlay-btn {
     margin-top: 8px; background: #2490b5; color: white; border: none;
     border-radius: 50px; padding: 13px 42px;
@@ -201,21 +232,30 @@
     font-weight: 600; letter-spacing: 0.5px;
     z-index: 15; white-space: nowrap; pointer-events: none;
   }
+
+  /* Intro asset previews */
+  .intro-assets {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center;
+    margin: 4px 0;
+  }
+  .intro-assets img { width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
 </style>
 </head>
 <body>
+
+<img src="assets/grass.png" id="bg" alt="">
 
 <div id="scene">
   <div class="cloud cloud-a"></div>
   <div class="cloud cloud-b"></div>
   <div class="cloud cloud-c"></div>
-  <div class="bank bank-top"></div>
-  <div class="bank bank-bottom"></div>
   <div id="river">
     <canvas id="river-canvas"></canvas>
   </div>
   <div id="catch-line"></div>
-  <div id="catcher-zone"><div id="catcher">🗑️</div></div>
+  <div id="catcher-zone">
+    <img id="catcher" src="assets/trashcan.png" alt="catcher">
+  </div>
 </div>
 
 <div id="hud">
@@ -228,17 +268,17 @@
     <span id="combo-display">—</span>
   </div>
   <button id="toggle-btn" class="trash-mode">
-    <span class="mode-icon" id="mode-icon">🗑️</span>
+    <img class="mode-icon" id="mode-icon" src="assets/trashcan.png" alt="mode">
     <span id="mode-label">Trash Can</span>
     <span style="opacity:0.45">⇄</span>
   </button>
   <div class="hud-block">
-    <span class="hud-label">🐟 Saved</span>
+    <span class="hud-label"> Saved</span>
     <span id="fish-val">0</span>
   </div>
   <div class="hud-block">
     <span class="hud-label">Lives</span>
-    <div id="lives-display">❤️❤️❤️</div>
+    <div id="lives-display"></div>
   </div>
   <div class="hud-block">
     <span class="hud-label">Time</span>
@@ -246,16 +286,29 @@
   </div>
 </div>
 
-<div id="hint">Move mouse • SPACE or click button to switch</div>
+<div id="hint">Move mouse • SPACE or click button to switch modes</div>
 
 <div id="overlay">
-  <div style="font-size:clamp(3rem,8vw,5rem)">🌊</div>
+  <div style="font-size:clamp(3rem,8vw,5rem)"></div>
   <h2>River Rescue</h2>
-  <p>Move your mouse to position the catcher.<br>
-     Switch between <strong style="color:#e74c3c">🗑️ Trash Can</strong> and <strong style="color:#4fc3e8">🪣 Fish Net</strong>.<br>
-     Collect <strong style="color:#f1c40f">trash streaks</strong> for bonus points • count how many <strong style="color:#4fc3e8">🐟 fish</strong> you save!<br>
-     Every item that passes costs a life!</p>
-  <button class="overlay-btn" id="start-btn">Play! 🚀</button>
+  <p>
+    Move your mouse to position the catcher.<br>
+    Switch between
+    <strong style="color:#e74c3c">Trash Can</strong> and
+    <strong style="color:#4fc3e8">Fish Net</strong> to catch the right items!<br>
+    Build <strong style="color:#f1c40f">trash streaks</strong> for bonus points -
+    save as many <strong style="color:#4fc3e8">salmon</strong> as you can!<br>
+    Every item that slips by costs a life.
+  </p>
+  <div class="intro-assets">
+    <img src="assets/trashcan.png" alt="trash can" title="Trash Can">
+    <img src="assets/fishing_net.png" alt="fish net" title="Fish Net">
+    <img src="assets/trash2.png" alt="trash" title="Trash">
+    <img src="assets/trash3.png" alt="trash" title="Trash">
+    <img src="assets/trash4.png" alt="trash" title="Trash">
+    <img src="assets/salmon.png" alt="salmon" title="Salmon">
+  </div>
+  <button class="overlay-btn" id="start-btn">Start!</button>
 </div>
 
 <script>
@@ -270,14 +323,11 @@
     RIVER_H   = H - BANK_H * 2;
     CATCH_X   = 100;
 
-    document.querySelector('.bank-top').style.height    = BANK_H + 'px';
-    document.querySelector('.bank-bottom').style.height = BANK_H + 'px';
     const riverEl = document.getElementById('river');
     riverEl.style.top    = RIVER_TOP + 'px';
     riverEl.style.height = RIVER_H + 'px';
     document.getElementById('catch-line').style.left = CATCH_X + 'px';
 
-    // resize canvas
     riverCanvas.width  = W;
     riverCanvas.height = RIVER_H;
 
@@ -292,7 +342,6 @@
   const riverCanvas = document.getElementById('river-canvas');
   const ctx = riverCanvas.getContext('2d');
 
-  // wave bands — each scrolls at a different speed & has its own sine shape
   const waveBands = [
     { yFrac: 0.18, amp: 5,   freq: 0.012, speed: 0.6,  alpha: 0.13, width: 2.5 },
     { yFrac: 0.32, amp: 4,   freq: 0.018, speed: 0.9,  alpha: 0.10, width: 2   },
@@ -301,7 +350,6 @@
     { yFrac: 0.76, amp: 5,   freq: 0.014, speed: 0.7,  alpha: 0.12, width: 2.5 },
   ];
 
-  // shimmer streaks that pulse in place (no raindrop movement)
   const shimmerLines = Array.from({ length: 10 }, () => ({
     xFrac: Math.random(),
     yFrac: 0.1 + Math.random() * 0.8,
@@ -319,7 +367,6 @@
     const cw = riverCanvas.width;
     const ch = riverCanvas.height;
 
-    // base water gradient
     const grad = ctx.createLinearGradient(0, 0, 0, ch);
     grad.addColorStop(0,    '#72d4f7');
     grad.addColorStop(0.35, '#3aaee0');
@@ -328,19 +375,15 @@
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, cw, ch);
 
-    // scrolling sine wave lines
     ctx.save();
     waveBands.forEach(w => {
       const y0 = w.yFrac * ch;
-      const offset = riverTime * w.speed * 60; // px offset scrolling right→left
-
+      const offset = riverTime * w.speed * 60;
       ctx.beginPath();
       for (let x = 0; x <= cw; x += 3) {
         const y = y0 + Math.sin((x + offset) * w.freq) * w.amp;
         x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
-
-      // fade out near edges
       const wg = ctx.createLinearGradient(0, 0, cw, 0);
       wg.addColorStop(0,    `rgba(255,255,255,0)`);
       wg.addColorStop(0.08, `rgba(255,255,255,${w.alpha})`);
@@ -352,7 +395,6 @@
     });
     ctx.restore();
 
-    // stationary shimmer glints that pulse
     ctx.save();
     shimmerLines.forEach(s => {
       const pulse = 0.5 + 0.5 * Math.sin(riverTime * s.pulseSpeed + s.phase);
@@ -373,14 +415,12 @@
     });
     ctx.restore();
 
-    // foam edge top
     const topFoam = ctx.createLinearGradient(0, 0, 0, 20);
     topFoam.addColorStop(0, 'rgba(255,255,255,0.55)');
     topFoam.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = topFoam;
     ctx.fillRect(0, 0, cw, 20);
 
-    // foam edge bottom
     const botFoam = ctx.createLinearGradient(0, ch - 20, 0, ch);
     botFoam.addColorStop(0, 'rgba(255,255,255,0)');
     botFoam.addColorStop(1, 'rgba(255,255,255,0.55)');
@@ -393,7 +433,7 @@
 
   // ── STATE ──────────────────────────────────────────────────────────────────
   let score = 0, lives = 3, trashCombo = 0, fishCount = 0;
-  let timeLeft = 90; // 1 min 30 sec
+  let timeLeft = 90;
   let timerInterval;
   let mode = 'trash';
   let gameRunning = false;
@@ -402,8 +442,15 @@
   let catcherY = 0;
   const CATCHER_HALF = 36;
 
-  const TRASH_EMOJIS = ['🥤','🧴','🧻','🍺','🥫','🛢️','👟','🧦','📦'];
-  const FISH_EMOJIS  = ['🐟','🐠','🐡','🐬','🦑','🐙','🦞','🦀'];
+  // Asset arrays: each entry has { src, type }
+  const TRASH_ASSETS = [
+    'assets/trash2.png',
+    'assets/trash3.png',
+    'assets/trash4.png',
+  ];
+  const FISH_ASSETS = [
+    'assets/salmon.png',
+  ];
 
   const scene        = document.getElementById('scene');
   const river        = document.getElementById('river');
@@ -439,28 +486,36 @@
     const m = Math.floor(timeLeft / 60);
     const s = timeLeft % 60;
     timerDisplay.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-    if (timeLeft <= 10) {
-      timerDisplay.classList.add('urgent');
-    } else {
-      timerDisplay.classList.remove('urgent');
-    }
+    timerDisplay.classList.toggle('urgent', timeLeft <= 10);
   }
+
   function tickTimer() {
     timeLeft--;
     updateTimer();
     if (timeLeft <= 0) endGame(true);
   }
+
   function updateLives() {
-    livesDisplay.textContent = '❤️'.repeat(Math.max(0,lives)) + '🖤'.repeat(Math.max(0,3-lives));
+    livesDisplay.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+      const img = document.createElement('img');
+      img.src = 'assets/salmon.png';
+      img.alt = i < lives ? 'life' : 'lost';
+      if (i >= lives) img.classList.add('lost');
+      livesDisplay.appendChild(img);
+    }
   }
+
   function updateScore(delta) {
     scoreDisplay.textContent = score;
     scoreDisplay.className = 'hud-val' + (delta > 0 ? ' good' : delta < 0 ? ' bad' : '');
     setTimeout(() => scoreDisplay.className = 'hud-val', 400);
   }
+
   function updateTrashCombo() {
-    comboDisplay.textContent = trashCombo >= 3 ? `🔥 x${trashCombo}` : trashCombo > 0 ? `✨ x${trashCombo}` : '—';
+    comboDisplay.textContent = trashCombo >= 3 ? `🔥 x${trashCombo}` : trashCombo > 0 ? ` x${trashCombo}` : '—';
   }
+
   function updateFishCount() {
     fishVal.textContent = fishCount;
     fishVal.classList.remove('pop');
@@ -468,6 +523,7 @@
     fishVal.classList.add('pop');
     setTimeout(() => fishVal.classList.remove('pop'), 400);
   }
+
   function popup(text, color, x, y) {
     const p = document.createElement('div');
     p.className = 'popup';
@@ -476,34 +532,59 @@
     scene.appendChild(p);
     setTimeout(() => p.remove(), 900);
   }
+
+  function popupImg(imgSrc, text, color, x, y) {
+    const p = document.createElement('div');
+    p.className = 'popup-img';
+    p.style.cssText = `color:${color};left:${x - 20}px;top:${y}px`;
+    const img = document.createElement('img');
+    img.src = imgSrc;
+    p.appendChild(img);
+    const span = document.createElement('span');
+    span.textContent = text;
+    p.appendChild(span);
+    scene.appendChild(p);
+    setTimeout(() => p.remove(), 900);
+  }
+
   function setMode(m) {
     mode = m;
-    const t = m === 'trash';
-    catcher.textContent   = t ? '🗑️' : '🪣';
-    toggleBtn.className   = t ? 'trash-mode' : 'fish-mode';
-    modeIcon.textContent  = t ? '🗑️' : '🪣';
-    modeLabel.textContent = t ? 'Trash Can' : 'Fish Net';
+    const isTrash = m === 'trash';
+    catcher.src           = isTrash ? 'assets/trashcan.png' : 'assets/fishing_net.png';
+    catcher.alt           = isTrash ? 'Trash Can' : 'Fish Net';
+    toggleBtn.className   = isTrash ? 'trash-mode' : 'fish-mode';
+    modeIcon.src          = isTrash ? 'assets/trashcan.png' : 'assets/fishing_net.png';
+    modeIcon.alt          = isTrash ? 'Trash Can' : 'Fish Net';
+    modeLabel.textContent = isTrash ? 'Trash Can' : 'Fish Net';
   }
+
   function toggleMode() { setMode(mode === 'trash' ? 'fish' : 'trash'); }
 
   // ── SPAWN ──────────────────────────────────────────────────────────────────
   function spawnItem() {
     if (!gameRunning) return;
     const isTrash = Math.random() > 0.45;
-    const pool = isTrash ? TRASH_EMOJIS : FISH_EMOJIS;
+    const assets = isTrash ? TRASH_ASSETS : FISH_ASSETS;
+    const src = assets[Math.floor(Math.random() * assets.length)];
     const type = isTrash ? 'trash' : 'fish';
-    const emoji = pool[Math.floor(Math.random() * pool.length)];
 
     const el = document.createElement('div');
     el.className = 'item';
-    el.textContent = emoji;
-    const fs = Math.max(28, Math.min(56, Math.round(W * 0.045)));
-    el.style.fontSize = fs + 'px';
+
+    const sz = Math.max(36, Math.min(100, Math.round(W * 0.08)));
+    el.style.width  = sz + 'px';
+    el.style.height = sz + 'px';
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = type;
+    //if (!isTrash) img.style.transform = 'scaleX(-1)';
+    el.appendChild(img);
 
     const margin = 24;
     const itemRiverY = margin + Math.random() * (RIVER_H - margin * 2);
     el.style.top = itemRiverY + 'px';
-    const itemSceneY = RIVER_TOP + itemRiverY + fs * 0.5;
+    const itemSceneY = RIVER_TOP + itemRiverY + sz * 0.5;
 
     const dur = itemSpeed + Math.random() * 2500;
     const bob = 1.4 + Math.random() * 1.2;
@@ -525,22 +606,20 @@
 
         if (caught) {
           if (type === 'trash') {
-            // trash: increment streak, score with multiplier
             trashCombo++;
             const pts = 10 * (trashCombo >= 3 ? 2 : 1);
             score += pts;
             updateScore(pts);
             updateTrashCombo();
-            popup(trashCombo >= 3 ? `+${pts} 🔥` : `+${pts}`, '#f39c12', CATCH_X, catcherY - 30);
+            popupImg(src, trashCombo >= 3 ? `+${pts} 🔥` : `+${pts}`, '#f39c12', CATCH_X, catcherY - 40);
           } else {
-            // fish: increment fish counter, flat 10 pts, reset trash combo
             fishCount++;
             trashCombo = 0;
             score += 10;
             updateScore(10);
             updateFishCount();
             updateTrashCombo();
-            popup(`🐟 +1`, '#4fc3e8', CATCH_X, catcherY - 30);
+            popupImg(src, '+1', '#4fc3e8', CATCH_X, catcherY - 40);
           }
           catcher.classList.remove('miss-anim');
           void catcher.offsetWidth;
@@ -596,14 +675,17 @@
     timerDisplay.classList.remove('urgent');
     document.querySelectorAll('.item').forEach(i => i.remove());
     overlay.innerHTML = `
-      <div style="font-size:clamp(3rem,8vw,5rem)">${timeUp ? '⏰' : '😢'}</div>
+      
       <h2>${timeUp ? "Time's Up!" : 'Game Over!'}</h2>
       <p>
         Score: <strong style="color:#f1c40f;font-size:1.3em">${score}</strong><br>
-        Fish saved: <strong style="color:#4fc3e8;font-size:1.3em">${fishCount} 🐟</strong><br>
-        ${timeUp ? '<span style="color:rgba(255,255,255,0.5);font-size:0.9em">Great run! The river is cleaner already 🌊</span>' : '<span style="color:rgba(255,255,255,0.5);font-size:0.9em">The river thanks you! 🌊</span>'}
+        Salmon saved: <strong style="color:#4fc3e8;font-size:1.3em">${fishCount}</strong>
+        <img src="assets/salmon.png" style="width:28px;height:28px;object-fit:contain;vertical-align:middle;margin-left:4px"><br>
+        ${timeUp
+          ? '<span style="color:rgba(255,255,255,0.5);font-size:0.9em">Great run! The river is cleaner already! </span>'
+          : '<span style="color:rgba(255,255,255,0.5);font-size:0.9em">The river thanks you! </span>'}
       </p>
-      <button class="overlay-btn" id="restart-btn">Play Again 🔄</button>
+      <button class="overlay-btn" id="restart-btn">Play Again!</button>
     `;
     overlay.style.display = 'flex';
     document.getElementById('restart-btn').addEventListener('click', startGame);
@@ -615,6 +697,9 @@
     if (e.code === 'Space') { e.preventDefault(); if (gameRunning) toggleMode(); }
   });
   document.getElementById('start-btn').addEventListener('click', startGame);
+
+  // Init lives display
+  updateLives();
 </script>
 </body>
 </html>
