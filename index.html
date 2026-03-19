@@ -31,7 +31,6 @@
     z-index: 1;
   }
 
-
   #river {
     position: absolute; left: 0; right: 0;
     overflow: hidden;
@@ -139,7 +138,6 @@
   #toggle-btn.fish-mode  { border-color: #4fc3e8; background: rgba(79,195,232,0.15); }
   .mode-icon { width: 32px; height: 32px; object-fit: contain; }
 
-  /* Hard badge shown in HUD during gameplay */
   #hard-badge {
     display: none;
     font-family: 'Fredoka One', cursive; font-size: 0.8rem;
@@ -219,11 +217,11 @@
   }
 
   #bottom-banner {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  height: 60px; /* adjust to match your banner image height */
-  background: url('assets/yellow_frame.png') center/cover no-repeat;
-  z-index: 20;
-}
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 60px;
+    background: url('assets/yellow_frame.png') center/cover no-repeat;
+    z-index: 20;
+  }
 
   .intro-assets {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center;
@@ -231,7 +229,6 @@
   }
   .intro-assets img { width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
 
-  /* ── Hard mode toggle row ── */
   #hard-row {
     display: flex; align-items: center; gap: 12px;
     cursor: pointer; padding: 8px 18px;
@@ -272,9 +269,6 @@
 <img src="assets/grass.png" id="bg" alt="">
 
 <div id="scene">
-  <div class="cloud cloud-a"></div>
-  <div class="cloud cloud-b"></div>
-  <div class="cloud cloud-c"></div>
   <div id="river">
     <canvas id="river-canvas"></canvas>
   </div>
@@ -314,7 +308,7 @@
 </div>
 
 <div id="bottom-banner"></div>
-<div id="hint">Move mouse - SPACE or click button to switch modes</div>
+<div id="hint">Move mouse · SPACE or click button to switch modes</div>
 
 <div id="overlay">
   <div style="font-size:clamp(3rem,8vw,5rem)"></div>
@@ -348,19 +342,24 @@
 <script>
   // ── LAYOUT ─────────────────────────────────────────────────────────────────
   let W, H, BANK_H, RIVER_TOP, RIVER_H, CATCH_X;
+  const HUD_H = 60;    // approx hud height
+  const BOT_H = 60;    // bottom banner height
 
   function layout() {
     W = window.innerWidth; H = window.innerHeight;
-    BANK_H    = Math.round(H * 0.27);
+    // FIX: make banks slightly smaller so river is taller
+    BANK_H    = Math.round(H * 0.20);   // was 0.27 — gives ~14% more river height
     RIVER_TOP = BANK_H;
     RIVER_H   = H - BANK_H * 2;
     CATCH_X   = 100;
+
     const riverEl = document.getElementById('river');
     riverEl.style.top    = RIVER_TOP + 'px';
     riverEl.style.height = RIVER_H + 'px';
     document.getElementById('catch-line').style.left = CATCH_X + 'px';
     riverCanvas.width  = W;
     riverCanvas.height = RIVER_H;
+
     if (!gameRunning) {
       catcherY = RIVER_TOP + RIVER_H / 2;
       catcherZone.style.top = catcherY + 'px';
@@ -437,7 +436,10 @@
   let catcherY = 0;
   const CATCHER_HALF = 36;
 
-  // Difficulty configs
+  // FIX: track active item Y positions to prevent overlap
+  const activeItemYs = [];
+  const ITEM_MIN_SEPARATION = 64; // min px between item centers
+
   const CFG = {
     normal: { spawnDelay: 1800, itemSpeed: 9000, rampSpawn: 130, rampSpeed: 350, minSpawn: 550,  minSpeed: 3800 },
     hard:   { spawnDelay: 650,  itemSpeed: 4200, rampSpawn: 60,  rampSpeed: 250, minSpawn: 280,  minSpeed: 1800 }
@@ -545,6 +547,25 @@
   function toggleMode() { setMode(mode === 'trash' ? 'fish' : 'trash'); }
 
   // ── SPAWN ──────────────────────────────────────────────────────────────────
+
+  // FIX: find a Y position that doesn't overlap existing items
+  function pickNonOverlappingY(sz) {
+    const margin = sz / 2 + 8;                     // keep item fully inside river
+    const minY = margin;
+    const maxY = RIVER_H - margin;
+    const range = maxY - minY;
+    if (range <= 0) return RIVER_H / 2;
+
+    // Try up to 12 random positions, pick first non-overlapping one
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const candidate = minY + Math.random() * range;
+      const tooClose = activeItemYs.some(y => Math.abs(y - candidate) < ITEM_MIN_SEPARATION);
+      if (!tooClose) return candidate;
+    }
+    // Fallback: just use a random spot (better than nothing)
+    return minY + Math.random() * range;
+  }
+
   function spawnItem() {
     if (!gameRunning) return;
     const isTrash = Math.random() > 0.45;
@@ -554,17 +575,23 @@
 
     const el = document.createElement('div');
     el.className = 'item';
-    const sz = Math.max(36, Math.min(100, Math.round(W * 0.08)));
+
+    // FIX: clamp item size so it always fits within RIVER_H with margin
+    const maxSzByRiver = Math.floor(RIVER_H * 0.22);
+    const sz = Math.max(36, Math.min(maxSzByRiver, Math.round(W * 0.08)));
     el.style.width = sz + 'px'; el.style.height = sz + 'px';
 
     const img = document.createElement('img');
     img.src = src; img.alt = type;
     el.appendChild(img);
 
-    const margin = 24;
-    const itemRiverY = margin + Math.random() * (RIVER_H - margin * 2);
-    el.style.top = itemRiverY + 'px';
-    const itemSceneY = RIVER_TOP + itemRiverY + sz * 0.5;
+    // FIX: use non-overlapping Y that keeps item fully within river bounds
+    const itemRiverY = pickNonOverlappingY(sz);
+    el.style.top = (itemRiverY - sz / 2) + 'px';   // top-left corner, centered on itemRiverY
+    const itemSceneY = RIVER_TOP + itemRiverY;       // absolute scene Y of item center
+
+    // Register this Y so future items avoid it
+    activeItemYs.push(itemRiverY);
 
     const dur = itemSpeed + Math.random() * 2500;
     const bob = 1.4 + Math.random() * 1.2;
@@ -572,12 +599,18 @@
     river.appendChild(el);
 
     const check = setInterval(() => {
-      if (!gameRunning) { clearInterval(check); el.remove(); return; }
+      if (!gameRunning) {
+        clearInterval(check);
+        removeActiveY(itemRiverY);
+        el.remove();
+        return;
+      }
       const rect = el.getBoundingClientRect();
       const itemX = rect.left + rect.width / 2;
 
       if (itemX < CATCH_X + 20 && itemX > CATCH_X - 30) {
         clearInterval(check);
+        removeActiveY(itemRiverY);
         const inRange    = Math.abs(catcherY - itemSceneY) < CATCHER_HALF + 24;
         const caught     = inRange && ((type === 'trash' && mode === 'trash') || (type === 'fish' && mode === 'fish'));
         const wrongCatch = inRange && !caught;
@@ -605,9 +638,16 @@
           if (lives <= 0) endGame();
         }
       } else if (itemX < -80) {
-        clearInterval(check); el.remove();
+        clearInterval(check);
+        removeActiveY(itemRiverY);
+        el.remove();
       }
     }, 40);
+  }
+
+  function removeActiveY(y) {
+    const idx = activeItemYs.indexOf(y);
+    if (idx !== -1) activeItemYs.splice(idx, 1);
   }
 
   // ── DIFFICULTY RAMP ────────────────────────────────────────────────────────
@@ -622,6 +662,7 @@
   // ── GAME FLOW ──────────────────────────────────────────────────────────────
   function startGame() {
     score = 0; lives = 3; trashCombo = 0; fishCount = 0; timeLeft = 90;
+    activeItemYs.length = 0;
     const cfg = hardMode ? CFG.hard : CFG.normal;
     spawnDelay = cfg.spawnDelay;
     itemSpeed  = cfg.itemSpeed;
@@ -640,6 +681,7 @@
 
   function endGame(timeUp = false) {
     gameRunning = false;
+    activeItemYs.length = 0;
     clearInterval(spawnInterval); clearInterval(diffInterval); clearInterval(timerInterval);
     timerDisplay.classList.remove('urgent');
     document.querySelectorAll('.item').forEach(i => i.remove());
